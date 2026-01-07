@@ -4,10 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Project extends Model
+class Task extends Model
 {
     use SoftDeletes;
 
@@ -17,25 +16,19 @@ class Project extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
+        'title',
         'description',
-        'owner',
+        'project_id',
         'status',
+        'priority',
+        'due_date',
     ];
 
     /**
-     * Project belongs to a user.
+     * Task belongs to a project.
      */
-    public function user(): BelongsTo
+    public function project(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'owner');
-    }
-
-    /**
-     * Project has many tasks.
-     */
-    public function tasks(): HasMany
-    {
-        return $this->hasMany(Task::class);
+        return $this->belongsTo(Project::class);
     }
 }

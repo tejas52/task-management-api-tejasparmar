@@ -9,126 +9,136 @@ use Illuminate\Support\Facades\Validator;
 
 class ProjectController extends Controller
 {
-    // LIST projects (only authenticated user's projects)
+    /**
+     * Get projects for authenticated user.
+     */
     public function index(Request $request)
     {
         $projects = Project::where('owner', $request->user()->id)->get();
 
         return response()->json([
             'status' => true,
-            'data' => $projects
+            'data'   => $projects,
         ]);
     }
 
-    //create a new project
+    /**
+     * Create a new project with logged-in user as owner.
+     */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
+            'name'        => 'required|string|max:255',
             'description' => 'required|string',
-            'status' => 'required|in:pending,in_progress,completed',
+            'status'      => 'required|in:pending,in_progress,completed',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $project = Project::create([
-            'name' => $request->name,
+            'name'        => $request->name,
             'description' => $request->description,
-            'status' => $request->status,
-            'owner' => $request->user()->id,
+            'status'      => $request->status,
+            'owner'       => $request->user()->id,
         ]);
 
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => 'Project created successfully',
-            'data' => $project
+            'data'    => $project,
         ], 201);
     }
 
-    // SHOW single project
-    public function show(Request $request, $id)
+    /**
+     * Show project details by ID (authenticated user only).
+     */
+    public function show(Request $request, int $id)
     {
         $project = Project::where('id', $id)
             ->where('owner', $request->user()->id)
             ->first();
 
-        if (!$project) {
+        if (! $project) {
             return response()->json([
-                'status' => false,
-                'message' => 'Project not found'
+                'status'  => false,
+                'message' => 'Project not found',
             ], 404);
         }
 
         return response()->json([
             'status' => true,
-            'data' => $project
+            'data'   => $project,
         ]);
     }
 
-    // UPDATE project
-    public function update(Request $request, $id)
+    /**
+     * Update project details by ID (authenticated user only).
+     */
+    public function update(Request $request, int $id)
     {
         $project = Project::where('id', $id)
             ->where('owner', $request->user()->id)
             ->first();
 
-        if (!$project) {
+        if (! $project) {
             return response()->json([
-                'status' => false,
-                'message' => 'Project not found'
+                'status'  => false,
+                'message' => 'Project not found',
             ], 404);
         }
 
         $validator = Validator::make($request->all(), [
-            'name' => 'sometimes|required|string|max:255',
+            'name'        => 'sometimes|required|string|max:255',
             'description' => 'sometimes|required|string',
-            'status' => 'sometimes|required|in:pending,in_progress,completed',
+            'status'      => 'sometimes|required|in:pending,in_progress,completed',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
-        $project->update($request->only('name', 'description', 'status'));
+        $project->update($request->only([
+            'name',
+            'description',
+            'status',
+        ]));
 
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => 'Project updated successfully',
-            'data' => $project
+            'data'    => $project,
         ]);
     }
 
-    // DELETE project
-   public function destroy(Request $request, $id)
+    /**
+     * Soft delete project (authenticated user only).
+     */
+    public function destroy(Request $request, int $id)
     {
         $project = Project::where('id', $id)
             ->where('owner', $request->user()->id)
             ->first();
 
-        if (!$project) {
+        if (! $project) {
             return response()->json([
-                'status' => false,
-                'message' => 'Project not found'
+                'status'  => false,
+                'message' => 'Project not found',
             ], 404);
         }
 
         $project->delete();
 
         return response()->json([
-            'status' => true,
-            'message' => 'Project moved to trash'
+            'status'  => true,
+            'message' => 'Project moved to trash',
         ]);
     }
-
-
-
-
 }
