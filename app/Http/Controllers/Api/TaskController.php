@@ -99,8 +99,6 @@ class TaskController extends Controller
         ]);
     }
 
-
-
     /**
      * Update a task.
      */
@@ -109,8 +107,7 @@ class TaskController extends Controller
         $task = Task::withTrashed()
             ->with('project')
             ->find($id);
-
-        // ❌ Task not found
+        // Task not found
         if (! $task) {
             return response()->json([
                 'status'  => false,
@@ -118,7 +115,7 @@ class TaskController extends Controller
             ], 404);
         }
 
-        // ❌ Task is soft-deleted
+        // Task is soft-deleted
         if ($task->trashed()) {
             return response()->json([
                 'status'  => false,
@@ -126,15 +123,15 @@ class TaskController extends Controller
             ], 410);
         }
 
-        // ❌ Project is soft-deleted
-        if ($task->project->trashed()) {
+        // Project is soft-deleted
+        if (!$task->project) {
             return response()->json([
                 'status'  => false,
                 'message' => 'Project has been deleted. Task cannot be updated.',
             ], 410);
         }
 
-        // ❌ Authorization
+        // Authorization
         if ($task->project->owner !== $request->user()->id) {
             return response()->json([
                 'status'  => false,
