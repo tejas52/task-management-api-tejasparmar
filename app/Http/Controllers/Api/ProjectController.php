@@ -14,13 +14,22 @@ class ProjectController extends Controller
      */
     public function index(Request $request)
     {
-        $projects = Project::where('owner', $request->user()->id)->get();
+        $projects = Project::where('owner', $request->user()->id)
+            ->latest()
+            ->paginate(10); // change 10 as needed
 
         return response()->json([
             'status' => true,
-            'data'   => $projects,
+            'data'   => $projects->items(),
+            'meta'   => [
+                'current_page' => $projects->currentPage(),
+                'last_page'    => $projects->lastPage(),
+                'per_page'     => $projects->perPage(),
+                'total'        => $projects->total(),
+            ],
         ]);
     }
+
 
     /**
      * Create a new project with logged-in user as owner.

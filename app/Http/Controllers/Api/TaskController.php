@@ -14,16 +14,30 @@ class TaskController extends Controller
     /**
      * List tasks by project.
      */
+
     public function index(Request $request, int $projectId)
     {
         try {
             $project = Project::findOrFail($projectId);
 
+            // Authorization
             $this->authorizeProject($request, $project);
+
+            $perPage = (int) $request->get('per_page', 10);
+
+            $tasks = $project->tasks()
+                ->latest()
+                ->paginate($perPage);
 
             return response()->json([
                 'status' => true,
-                'data'   => $project->tasks,
+                'data'   => $tasks->items(),
+                'meta'   => [
+                    'current_page' => $tasks->currentPage(),
+                    'last_page'    => $tasks->lastPage(),
+                    'per_page'     => $tasks->perPage(),
+                    'total'        => $tasks->total(),
+                ],
             ]);
         } catch (ModelNotFoundException $e) {
             return response()->json([
@@ -32,6 +46,7 @@ class TaskController extends Controller
             ], 404);
         }
     }
+
 
     /**
      * Create a task for a project.
@@ -60,13 +75,22 @@ class TaskController extends Controller
     /**
      * Show task details.
      */
-    public function show(Request $request, Task $task)
+    public function show(Request $request, int $id)
     {
-        if ($task->project->owner !== $request->user()->id) {
+        $task = Task::where('id', $id)
+            ->whereNull('deleted_at')
+            ->whereHas('project', function ($query) use ($request) {
+                $query->where('owner', $request->user()->id)
+                    ->whereNull('deleted_at');
+            })
+            ->with('project')
+            ->first();
+
+        if (! $task) {
             return response()->json([
                 'status'  => false,
-                'message' => 'Unauthorized',
-            ], 403);
+                'message' => 'Task not found',
+            ], 404);
         }
 
         return response()->json([
@@ -75,11 +99,42 @@ class TaskController extends Controller
         ]);
     }
 
+
+
     /**
      * Update a task.
      */
-    public function update(Request $request, Task $task)
+    public function update(Request $request, int $id)
     {
+        $task = Task::withTrashed()
+            ->with('project')
+            ->find($id);
+
+        // ❌ Task not found
+        if (! $task) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Task not found',
+            ], 404);
+        }
+
+        // ❌ Task is soft-deleted
+        if ($task->trashed()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Task has been deleted and cannot be updated.',
+            ], 410);
+        }
+
+        // ❌ Project is soft-deleted
+        if ($task->project->trashed()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Project has been deleted. Task cannot be updated.',
+            ], 410);
+        }
+
+        // ❌ Authorization
         if ($task->project->owner !== $request->user()->id) {
             return response()->json([
                 'status'  => false,
@@ -107,8 +162,37 @@ class TaskController extends Controller
     /**
      * Soft delete a task.
      */
-    public function destroy(Request $request, Task $task)
+    public function destroy(Request $request, int $id)
     {
+        $task = Task::withTrashed()
+            ->with('project')
+            ->find($id);
+
+        // ❌ Task not found
+        if (! $task) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Task not found',
+            ], 404);
+        }
+
+        // ❌ Task already deleted
+        if ($task->trashed()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Task already deleted.',
+            ], 410);
+        }
+
+        // Project is soft-deleted
+        if (! $task->project || $task->project->trashed()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Project of this task has been deleted. Task cannot be deleted.',
+            ], 410);
+        }
+
+        // Authorization
         if ($task->project->owner !== $request->user()->id) {
             return response()->json([
                 'status'  => false,
@@ -123,57 +207,7 @@ class TaskController extends Controller
             'message' => 'Task moved to trash',
         ]);
     }
-
-    /**
-     * Restore a soft-deleted task.
-     */
-    public function restore(Request $request, int $id)
-    {
-        $task = Task::onlyTrashed()
-            ->with('project')
-            ->where('id', $id)
-            ->firstOrFail();
-
-        if ($task->project->owner !== $request->user()->id) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Unauthorized',
-            ], 403);
-        }
-
-        $task->restore();
-
-        return response()->json([
-            'status'  => true,
-            'message' => 'Task restored successfully',
-        ]);
-    }
-
-    /**
-     * Permanently delete a task.
-     */
-    public function forceDelete(Request $request, int $id)
-    {
-        $task = Task::onlyTrashed()
-            ->with('project')
-            ->where('id', $id)
-            ->firstOrFail();
-
-        if ($task->project->owner !== $request->user()->id) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Unauthorized',
-            ], 403);
-        }
-
-        $task->forceDelete();
-
-        return response()->json([
-            'status'  => true,
-            'message' => 'Task permanently deleted',
-        ]);
-    }
-
+    
     /**
      * Authorize project ownership.
      */

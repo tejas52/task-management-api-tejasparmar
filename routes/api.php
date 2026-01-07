@@ -33,7 +33,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //get, update, delete task by id
     Route::get('/task/{task}', [TaskController::class, 'show']);
     Route::put('/tasks/{task}', [TaskController::class, 'update']);
-    Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
+    Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
 });
 
 
