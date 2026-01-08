@@ -2,7 +2,7 @@
 # Task Management API
 
 ## Project Overview
-A RESTful Task Management API built with Laravel 10+. It allows users to register, authenticate using Sanctum, create projects, and manage tasks under those projects with strict ownership-based authorization and soft delete support.
+A RESTful Task Management API built with Laravel 12. It allows users to register, authenticate using Sanctum, create projects, and manage tasks under those projects with strict ownership-based authorization and soft delete support.
 
 ## Tech Stack
 - PHP 8.1+
@@ -63,7 +63,7 @@ php artisan test
 vendor/bin/phpstan analyse
 ```
 
-## API Endpoints
+## API Documentation
 
 ### Auth
 
@@ -369,10 +369,3 @@ vendor/bin/phpstan analyse
 ## Author
 
 Tejas Parmar
-
-```
-
----
-
-If you want **even shorter (½ page)** or **company-submission format**, tell me and I’ll compress it further ⚡
-```
