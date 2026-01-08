@@ -165,7 +165,7 @@ class TaskController extends Controller
             ->with('project')
             ->find($id);
 
-        // ❌ Task not found
+        // Task not found
         if (! $task) {
             return response()->json([
                 'status'  => false,
@@ -173,7 +173,7 @@ class TaskController extends Controller
             ], 404);
         }
 
-        // ❌ Task already deleted
+        // Task already deleted
         if ($task->trashed()) {
             return response()->json([
                 'status'  => false,
